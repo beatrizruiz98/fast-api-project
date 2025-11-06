@@ -18,8 +18,11 @@ class UserBase(BaseModel):
 
 class UserIn(UserBase):
     password: str
+
+class Token(BaseModel):
+    token_type: str = "Bearer"
+    access_token: str
     
-class UserLogin(BaseModel):
-    email: EmailStr
-    password: str
+class TokenData(BaseModel):
+    id: Optional[str] = None
 
