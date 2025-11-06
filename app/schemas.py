@@ -18,4 +18,8 @@ class UserBase(BaseModel):
 
 class UserIn(UserBase):
     password: str
+    
+class UserLogin(BaseModel):
+    email: EmailStr
+    password: str
 

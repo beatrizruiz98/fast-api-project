@@ -7,7 +7,7 @@ from .database import engine, get_session
 
 from sqlmodel import Session, SQLModel, select
 
-from .routers import posts, users
+from .routers import posts, users, auth
 
 # Crea tablas de SQLModel (requiere que models esté importado)
 SQLModel.metadata.create_all(engine)
@@ -16,6 +16,7 @@ app = FastAPI()
 
 app.include_router(posts.router)
 app.include_router(users.router)
+app.include_router(auth.router)
 
 # @app.get("/sqlalchemy-health", status_code=status.HTTP_200_OK)
 # def get_sqlalchemy_health(db: Session = Depends(get_session)):

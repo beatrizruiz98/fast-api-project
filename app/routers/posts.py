@@ -5,7 +5,8 @@ from ..database import get_session
 from ..models import Posts
 
 router = APIRouter(
-    prefix = "/posts"
+    prefix = "/posts",
+    tags=["Posts"]
 )
 
 @router.get("/", status_code=status.HTTP_200_OK, response_model=list[PostIn])
