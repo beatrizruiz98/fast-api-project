@@ -1,16 +1,15 @@
-from fastapi import FastAPI, HTTPException, status, Depends
-from .database import engine, get_session
-
-from sqlmodel import Session, SQLModel, select
-
+from fastapi import FastAPI
+from .database import engine
+from sqlmodel import SQLModel
 from .routers import posts, users, auth
+from .config import settings
 
 # Crea tablas de SQLModel (requiere que models esté importado)
 SQLModel.metadata.create_all(engine)
 
 app = FastAPI(
     title="FastAPI Project",
-    description="API created in FastAPI course",
+    description="API built with FastAPI and SQLModel",
     version="1.0.0"
 )
 

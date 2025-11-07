@@ -9,14 +9,15 @@ from datetime import datetime, timedelta, timezone
 from .schemas import TokenData
 from .database import get_session
 from .models import Users
+from .config import settings
 
 from sqlmodel import Session, select
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login") # Refering login endpoint
 
-SECRET_KEY = "6e3eebaad224dab29d0cfefde1622bfc338f4e3518ab4faa9c19d02307fc4a62" # Generate by openssl rand -hex 32
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
+SECRET_KEY = settings.secret_key   # Generate by openssl rand -hex 32
+ALGORITHM = settings.algorithm  
+ACCESS_TOKEN_EXPIRE_MINUTES = settings.access_token_expire_minutes
 
 def create_access_token(data: dict, expires_delta: timedelta | None = None): # Time expiration can be added manually
     to_encode = data.copy()
