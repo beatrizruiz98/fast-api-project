@@ -60,4 +60,4 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
     # Se usa token.id por el schema TokenData
     user = db.exec(select(Users).where(Users.id == token.id)).first()
     
-    return user.email
+    return user.id

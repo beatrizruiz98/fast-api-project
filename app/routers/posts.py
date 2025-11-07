@@ -1,6 +1,6 @@
 from fastapi import FastAPI, HTTPException, status, Depends, APIRouter
 from sqlmodel import Session, select
-from ..schemas import PostIn, PostBase
+from ..schemas import PostOut, PostBase, TokenData, PostCreate
 from ..database import get_session
 from ..models import Posts
 from ..oauth2 import get_current_user
@@ -10,58 +10,49 @@ router = APIRouter(
     tags=["Posts"]
 )
 
-@router.get("/", status_code=status.HTTP_200_OK, response_model=list[PostIn])
-def get_posts(db: Session = Depends(get_session)):
-    # cursor.execute("SELECT * FROM posts")
-    # posts = cursor.fetchall()
-    posts = db.exec(select(Posts)).all()
+@router.get("/", status_code=status.HTTP_200_OK, response_model=list[PostOut])
+def get_posts(db: Session = Depends(get_session),
+              current_user: id = Depends(get_current_user)):
+    
+    posts = db.exec(select(Posts).where(Posts.user_id==current_user)).all()
     return posts
 
-@router.post("/", status_code=status.HTTP_201_CREATED, response_model=PostIn)
-def create_post(payload: PostIn, db: Session = Depends(get_session), current_user: str = Depends(get_current_user)):
-    # cursor.execute(
-    #     "INSERT INTO posts (title, content, published) VALUES (%s, %s, %s) RETURNING *",
-    #     (post.title, post.content, post.published),
-    # )
-    # new_post = cursor.fetchone()
-    # conn.commit()
-    new_post = Posts(**payload.model_dump())
+@router.get("/{id}", status_code=status.HTTP_200_OK, response_model=PostOut)
+def get_a_post(id: int, 
+               db: Session = Depends(get_session), 
+               current_user: str = Depends(get_current_user)):
+    
+    post = db.get(Posts, id)
+    if not post:
+        raise HTTPException(status_code=404, detail=f"Post {id} was not found")
+    if post.user_id != int(current_user):
+        raise HTTPException(status_code=403, detail="Not authorized to perform requested action")
+    return post
+
+@router.post("/", status_code=status.HTTP_201_CREATED, response_model=PostCreate)
+def create_post(payload: PostBase,
+                db: Session = Depends(get_session),
+                current_user: str = Depends(get_current_user)):
+    
+    if current_user is None:
+        raise HTTPException(status_code=401, detail="Invalid token payload")
+    new_post = Posts(**payload.model_dump(), user_id=int(current_user))
     db.add(new_post)
     db.commit()
     db.refresh(new_post)
     return new_post
 
-@router.get("/{id}", status_code=status.HTTP_200_OK, response_model=PostIn)
-def get_a_post(id: int, db: Session = Depends(get_session), current_user: str = Depends(get_current_user)):
-    # cursor.execute("SELECT * FROM posts WHERE id = %s", (id,))
-    # post = cursor.fetchone()
-    post = db.get(Posts, id)
-    if not post:
-        raise HTTPException(status_code=404, detail=f"Post {id} was not found")
-    return post
-
-@router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_post(id: int, db: Session = Depends(get_session), current_user: str = Depends(get_current_user)):
-    # cursor.execute("DELETE FROM posts WHERE id = %s RETURNING *", (id,))
-    # deleted = cursor.fetchone()
-    post = db.get(Posts, id)
-    if not post:
-        raise HTTPException(status_code=404, detail=f"Post {id} was not found")
-    db.delete(post)
-    db.commit()
-    # conn.commit()
-    return
-
 @router.put("/{id}", status_code=status.HTTP_200_OK, response_model=PostBase)
-def update_post(id: int, payload: PostIn, db: Session = Depends(get_session), current_user: str = Depends(get_current_user)):
-    # cursor.execute(
-    #     "UPDATE posts SET title = %s, content = %s, published = %s WHERE id = %s RETURNING *",
-    #     (post.title, post.content, post.published, id),
-    # )
-    # updated = cursor.fetchone()
+def update_post(id: int, 
+                payload: PostBase, 
+                db: Session = Depends(get_session), 
+                current_user: str = Depends(get_current_user)):
+    
     post = db.get(Posts, id)
     if not post:
         raise HTTPException(status_code=404, detail=f"Post {id} was not found")
+    if post.user_id != int(current_user):
+        raise HTTPException(status_code=403, detail="Not authorized to perform requested action")
     # actualizamos los campos manualmente
     post.title = payload.title
     post.content = payload.content
@@ -70,5 +61,18 @@ def update_post(id: int, payload: PostIn, db: Session = Depends(get_session), cu
     db.add(post)      # opcional, pero recomendable
     db.commit()
     db.refresh(post)  # para devolver el valor actualizado
-    # conn.commit()
     return post
+
+@router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_post(id: int, 
+                db: Session = Depends(get_session), 
+                current_user: str = Depends(get_current_user)):
+
+    post = db.get(Posts, id)
+    if not post:
+        raise HTTPException(status_code=404, detail=f"Post {id} was not found")
+    if post.user_id != int(current_user):
+        raise HTTPException(status_code=403, detail="Not authorized to perform requested action")
+    db.delete(post)
+    db.commit()
+    return
