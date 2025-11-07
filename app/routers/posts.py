@@ -12,9 +12,12 @@ router = APIRouter(
 
 @router.get("/", status_code=status.HTTP_200_OK, response_model=list[PostOut])
 def get_posts(db: Session = Depends(get_session),
-              current_user: id = Depends(get_current_user)):
+              limit: int = 10,
+              skip: int = 0,
+              search: str = ""):
     
-    posts = db.exec(select(Posts).where(Posts.user_id==current_user)).all()
+    posts = db.exec(select(Posts).where(Posts.title.contains(search))
+                    .limit(limit).offset(skip)).all()
     return posts
 
 @router.get("/{id}", status_code=status.HTTP_200_OK, response_model=PostOut)
