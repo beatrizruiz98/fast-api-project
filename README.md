@@ -1,152 +1,152 @@
-# FastAPI Project – Guía de Uso
+# 🧩 FastAPI Project
 
-Documentación de cómo está construida la API, qué decisiones técnicas se tomaron y cómo volver a ponerla en marcha desde cero.
-
----
-
-## ¿Qué problema resuelve?
-
-Es una API REST para publicar posts, votar contenido y gestionar usuarios. La autenticación se basa en JWT (OAuth2 password flow) y cada recurso expone operaciones CRUD completas protegidas por permisos y relaciones en base de datos.
+API REST para **gestionar posts, usuarios y votos**, construida con **FastAPI + SQLModel**, **JWT**, **PostgreSQL** y **Alembic**.  
+Pensada como plantilla educativa o punto de partida para proyectos reales.
 
 ---
 
-## Stack y decisiones clave
+## 🚀 Quickstart
 
-- **FastAPI + SQLModel**: aprovecha tipado de Pydantic y relaciones de SQLAlchemy sin perder la ergonomía de FastAPI (validaciones automáticas + documentación OpenAPI).
-- **PostgreSQL + Alembic**: la estructura de tablas (`Posts`, `Users`, `Votes`) se maneja con migraciones versionadas para reproducir cualquier cambio estructural.
-- **Autenticación JWT**: `app/oauth2.py` genera tokens firmados con `SECRET_KEY` y los verifica en cada endpoint protegido.
-- **Gestión de configuración**: `pydantic-settings` carga las variables sensibles desde `.env`, evitando hardcodear secretos.
-- **Hashing seguro**: `pwdlib` (Argon2) cifra contraseñas antes de persistirlas.
-- **CORS**: `FastAPI` incluye un middleware que permite peticiones desde `localhost` o la IP local definida en `app/main.py`.
-
----
-
-## Mapa rápido de carpetas
-
-```
-app/
-  main.py           # crea app FastAPI y registra routers
-  config.py         # Settings (BaseSettings) lee .env
-  database.py       # engine y Session factory
-  models.py         # tablas SQLModel (Posts, Users, Votes)
-  schemas.py        # modelos Pydantic para requests/responses
-  routers/          # posts, users, auth, votes
-  oauth2.py         # creación y verificación de JWT
-  utils.py          # hashing y verificación de contraseñas
-alembic/            # migraciones versionadas
-requirements.txt    # dependencias exactas
-```
-
----
-
-## Requisitos previos
-
+### 1️⃣ Requisitos
 - Python 3.11+
-- PostgreSQL accesible (local o remoto)
-- Entorno virtual recomendado (`python -m venv venv`)
-- Opcional: herramienta como `just`, `make` o `docker` si luego se automatiza
+- PostgreSQL activo (local o remoto)
+- `git` instalado
 
----
-
-## Variables de entorno
-
-Crea un archivo `.env` en la raíz (está excluido del control de versiones):
-
----
-
-## Instalación paso a paso
-
-1. **Clonar o descargar** el repositorio.
-2. **Crear entorno virtual**:
-   ```bash
-   python -m venv venv
-   source venv/bin/activate
-   ```
-3. **Instalar dependencias**:
-   ```bash
-   pip install -r requirements.txt
-   ```
-4. **Configurar la base de datos**: crea la BD indicada en tu `.env`.
-
----
-
-## Migraciones con Alembic
-
-El historial está en `alembic/versions`. Comandos útiles:
+### 2️⃣ Instalación
 
 ```bash
-alembic upgrade head      # aplica todas las migraciones
-alembic revision -m "msg" # genera un nuevo archivo en versions/
-alembic downgrade -1      # vuelve un paso atrás
-```
+# Clonar el repositorio
+git clone https://github.com/<tu_usuario>/<tu_repo>.git
+cd <tu_repo>
 
-> Al ejecutar `uvicorn`, `SQLModel.metadata.create_all()` en `main.py` puede crear tablas en blanco (útil en desarrollo). En entornos reales, usa solo Alembic para mantener el versionado bajo control.
+# Crear entorno virtual
+python -m venv venv
+source venv/bin/activate     # En Windows: venv\Scripts\activate
 
----
+# Instalar dependencias
+pip install -r requirements.txt
+3️⃣ Configurar variables de entorno
+Crea un archivo .env en la raíz del proyecto (no se sube a GitHub):
 
-## Ejecutar la API
+env
+Copy code
+DATABASE_URL=postgresql://user:password@localhost:5432/dbname
+SECRET_KEY=change_me
+ALGORITHM=HS256
+ACCESS_TOKEN_EXPIRE_MINUTES=60
+4️⃣ Ejecutar migraciones y levantar el servidor
+bash
+Copy code
+alembic upgrade head
+uvicorn app.main:app --reload
+Accede a la API:
 
-```bash
-uvicorn app.main:app --reload  // fastapi dev --host 0.0.0.0 --pot 8000
-```
+Swagger UI → http://localhost:8000/docs
 
-Con eso tendrás:
+ReDoc → http://localhost:8000/redoc
 
-- Swagger UI: `http://localhost:8000/docs`
-- Redoc: `http://localhost:8000/redoc`
-- Endpoint de salud: `GET /`
+🧱 Estructura del proyecto
+bash
+Copy code
+app/
+  main.py           # Inicializa la app FastAPI
+  routers/          # posts.py, users.py, auth.py, votes.py
+  models.py         # Tablas SQLModel (Posts, Users, Votes)
+  schemas.py        # Pydantic models (requests/responses)
+  database.py       # Conexión y sesión a PostgreSQL
+  oauth2.py         # Creación y validación de JWT
+  utils.py          # Hashing (Argon2)
+alembic/
+  env.py
+  versions/         # Migraciones versionadas
+requirements.txt
+⚙️ Stack y decisiones técnicas
+FastAPI + SQLModel → validación automática y ORM tipado.
 
----
+PostgreSQL + Alembic → persistencia estable y migraciones reproducibles.
 
-## Recorrido por los commits (modo tutorial)
+OAuth2 + JWT → autenticación segura con tokens.
 
-1. **`ca48ca5` – Primer commit**: estructura base de FastAPI.
-2. **`d5839b2` – Posts CRUD**: modelos, esquemas y rutas para publicar contenido.
-3. **`c0b5eee` – Usuarios**: creación de usuarios, hashing de contraseñas y esquemas separados (`UserIn`, `UserOut`).
-4. **`fe4ae54` – Routers modulares**: separación en `app/routers` con prefijos y tags.
-5. **`1b4e9d5` y `4cd95bb` – Autenticación JWT**: login, generación y verificación de tokens.
-6. **`43d0bc2` – Dependencia `get_current_user`**: todos los endpoints sensibles ahora validan el token automáticamente.
-7. **`39226f5` – Relaciones Post ↔ User**: claves foráneas + restricciones de propietarios.
-8. **`66f62dc` – Query params**: paginación y búsqueda en `GET /posts`.
-9. **`43b757f` – Variables de entorno**: `Settings` centraliza configuración sensible.
-10. **`8ec1319` – Votos**: join entre `Posts` y `Votes` para devolver conteos en cada respuesta.
-11. **`06d0df7` – Alembic**: reaplicación de migraciones para mantener la base sin drift.
-12. **`67929a7` – CORS**: apertura controlada para pruebas locales.
+Argon2 (pwdlib) → cifrado robusto de contraseñas.
 
-Usa esta cronología si necesitas rearmar la app o contar la historia en una documentación más larga.
+pydantic-settings → gestión limpia de configuración (.env).
 
----
+CORS → habilitado para entorno local.
 
-## Flujo típico de uso
+🔑 Endpoints principales
+Método	Ruta	Descripción	Auth
+POST	/users	Crear usuario	❌
+POST	/login	Obtener token JWT	❌
+GET	/posts	Listar posts públicos	❌
+POST	/posts	Crear post	✅
+PUT	/posts/{id}	Actualizar post	✅
+DELETE	/posts/{id}	Eliminar post	✅
+POST	/votes	Votar / quitar voto	✅
 
-1. **Crear usuario**  
-   `POST /users` con JSON `{"email": "...", "password": "...", "phone_number": "..."}`.
-2. **Iniciar sesión**  
-   `POST /login` con `form-data` (`username` = email). Respuesta: `access_token`.
-3. **Consumir endpoints protegidos**  
-   Incluye `Authorization: Bearer <token>` en:
-   - `POST /posts` (crear)
-   - `PUT /posts/{id}` y `DELETE /posts/{id}` (solo dueño)
-   - `POST /votes` (dir=1 crea, dir=0 elimina)
-4. **Listar contenido público**  
-   `GET /posts?limit=10&skip=0&search=texto` es público, pero `GET /posts/{id}` valida propiedad.
+Autenticación:
 
-Ejemplo rápido con `httpie`:
+makefile
+Copy code
+Authorization: Bearer <access_token>
+🧬 Migraciones Alembic
+bash
+Copy code
+alembic upgrade head         # aplica migraciones
+alembic revision -m "msg"    # genera una nueva migración
+alembic downgrade -1         # revierte una versión
+En producción usa solo Alembic; no dependas de SQLModel.metadata.create_all().
 
-```bash
-http POST :8000/users email=demo@mail.com password=123456
-http -f POST :8000/login username=demo@mail.com password=123456
-http POST :8000/posts title="Hola" content="Mi primer post" "Authorization:Bearer <token>"
-```
+🐳 Docker (opcional)
+Ejemplo básico de docker-compose.yml:
 
----
+yaml
+Copy code
+version: "3.9"
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: app
+      POSTGRES_DB: appdb
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
 
-## Buenas prácticas y próximos pasos
+  api:
+    build: .
+    environment:
+      DATABASE_URL: postgresql://app:app@db:5432/appdb
+      SECRET_KEY: change_me
+      ALGORITHM: HS256
+      ACCESS_TOKEN_EXPIRE_MINUTES: 60
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
+    depends_on:
+      - db
+    ports:
+      - "8000:8000"
 
-- Añadir tests con `pytest` (routers y auth).
-- Contenerizar con Docker Compose (app + Postgres) para despliegues repetibles.
-- Automatizar la creación de usuarios demo o datos seed para demos futuras.
-- Extender documentación formal a partir de esta guía (diagramas, secuencias, etc.).
+volumes:
+  db_data:
+bash
+Copy code
+docker compose up -d
+🧪 Próximos pasos
+Añadir tests con pytest.
 
-Con esto tienes una referencia rápida para levantar, depurar o seguir evolucionando tu primera API en FastAPI. ¡Éxitos con la documentación larga! 🎯
+Contenerizar completamente (Dockerfile + Compose).
+
+Crear datos seed para entornos de demo.
+
+Ampliar documentación técnica en docs/GUIDE.md.
+
+🩵 Troubleshooting
+Problema	Causa probable	Solución
+Error al conectar a DB	URL incorrecta o Postgres apagado	Revisa DATABASE_URL y conexión local
+401 Unauthorized	Falta token o expirado	Renueva el JWT en /login
+CORS bloquea peticiones	Peticiones desde otro origen	Añade origen en middleware CORS
+
+📜 Licencia
+MIT © 2025 [Tu nombre o alias]
 
