@@ -21,7 +21,7 @@ class Users(SQLModel, table=True):
     email: EmailStr = Field(nullable=False, unique=True)
     password: str = Field(nullable=False)
     created_at: datetime = Field(default_factory=datetime.utcnow)
-    phone_number: int = Field()
+    phone_number: str = Field(nullable=True)
     
     # Devuelve los posts asociados a este usuario (necesario para la relación inversa)
     post: list[Posts] = Relationship(back_populates="user")

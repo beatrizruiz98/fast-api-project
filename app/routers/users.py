@@ -2,7 +2,7 @@ from fastapi import FastAPI, HTTPException, status, Depends, APIRouter
 from sqlmodel import Session, select
 from ..database import get_session
 from ..models import Users
-from ..schemas import UserBase, UserIn
+from ..schemas import UserBase, UserIn, UserOut
 from ..utils import get_password_hash
 from ..oauth2 import get_current_user
 
@@ -22,7 +22,7 @@ def create_user(payload: UserIn, db: Session = Depends(get_session)):
     db.refresh(user)
     return user
 
-@router.get("/{id}", status_code=status.HTTP_200_OK, response_model=UserBase)
+@router.get("/{id}", status_code=status.HTTP_200_OK, response_model=UserOut)
 def get_user(id: int, db: Session = Depends(get_session), current_user: str = Depends(get_current_user)):
     user = db.get(Users, id)
     if not user:

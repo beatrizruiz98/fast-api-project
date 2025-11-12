@@ -9,6 +9,10 @@ class UserBase(BaseModel):
 
 class UserIn(UserBase):
     password: str
+    phone_number: Optional[str] = None
+
+class UserOut(UserBase):
+    phone_number: Optional[str] = None
 
 class Vote(BaseModel):
     post_id: int
